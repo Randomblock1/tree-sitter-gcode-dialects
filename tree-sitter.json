@@ -37,7 +37,7 @@
     "description": "Marlin, RepRapFirmware, Klipper macro, and RS274/LinuxCNC syntax",
     "authors": [{ "name": "Benjamin Gonzalez" }],
     "links": {
-      "repository": "https://github.com/Randomblock1/tree-sitter-gcode"
+      "repository": "https://github.com/Randomblock1/tree-sitter-gcode-dialects"
     }
   },
   "bindings": {

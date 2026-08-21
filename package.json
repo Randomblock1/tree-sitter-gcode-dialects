@@ -1,12 +1,12 @@
 {
-  "name": "tree-sitter-gcode",
+  "name": "tree-sitter-gcode-dialects",
   "version": "0.1.0",
   "description": "A tolerant Tree-sitter grammar for printer and CNC G-code dialects",
   "license": "MIT",
   "author": "Benjamin Gonzalez",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Randomblock1/tree-sitter-gcode.git"
+    "url": "https://github.com/Randomblock1/tree-sitter-gcode-dialects.git"
   },
   "main": "bindings/node",
   "types": "bindings/node",

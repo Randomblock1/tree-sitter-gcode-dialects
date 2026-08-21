@@ -1,10 +1,10 @@
-# tree-sitter-gcode
+# tree-sitter-gcode-dialects
 
 A tolerant Tree-sitter grammar for the G-code people edit on real printers and CNC machines: Marlin/RepRap-style firmware output, RepRapFirmware meta commands, Klipper configuration and macros, and RS274/NGC (LinuxCNC/Fanuc) programs. It is independently authored, not a fork of `ChocolateNao/tree-sitter-gcode`.
 
 The parser deliberately accepts unknown extended commands and vendor arguments, and understands space-free compact lines (`N10G01X1.Y1.F100.` splits into its words). Firmware remains the authority on whether a particular command exists and whether its operands are valid; the grammar's job is to preserve useful syntax structure and highlighting without breaking the rest of a file.
 
-This grammar backs the [Randomblock1/zed-gcode](https://github.com/Randomblock1/zed-gcode) Zed extension, which layers four language modes (3D printer, RepRapFirmware, Klipper config, CNC) on this one parser.
+This grammar backs [G-code Dialects](https://github.com/Randomblock1/zed-gcode-dialects), the Zed extension that layers four language modes (3D printer, RepRapFirmware, Klipper config, CNC) on this one parser.
 
 ## Dialect coverage
 
