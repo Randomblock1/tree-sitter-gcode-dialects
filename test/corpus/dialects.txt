@@ -649,3 +649,63 @@ if "x" Not In global.names
     (rrf_output_keyword)
     (string
       (double_quoted_string))))
+
+==================
+Siemens address assignments and mixed-case operators
+==================
+
+N10 G1 X1=50 Y1=25.3 E1=22. F3000
+R10=R11+2
+S1=5000 M3
+G0 R10=5
+G1 X[1 mOd 2] Y[3 aNd 1] Z[1 oR 0]
+
+---
+
+(source_file
+  (program_line
+    (line_number)
+    (g_code)
+    (address_assignment
+      (axis_word)
+      (number))
+    (address_assignment
+      (axis_word)
+      (number))
+    (address_assignment
+      (axis_word)
+      (number))
+    (feed_word))
+  (program_line
+    (address_assignment
+      (parameter_word)
+      (binary_expression
+        (identifier)
+        (number))))
+  (program_line
+    (address_assignment
+      (spindle_word)
+      (number))
+    (parameter_word))
+  (program_line
+    (g_code)
+    (address_assignment
+      (parameter_word)
+      (number)))
+  (program_line
+    (g_code)
+    (expression_word
+      (bracket_word_start)
+      (binary_expression
+        (number)
+        (number)))
+    (expression_word
+      (bracket_word_start)
+      (binary_expression
+        (number)
+        (number)))
+    (expression_word
+      (bracket_word_start)
+      (binary_expression
+        (number)
+        (number)))))

@@ -78,6 +78,10 @@
     "named": true,
     "subtypes": [
       {
+        "type": "address_assignment",
+        "named": true
+      },
+      {
         "type": "axis_word",
         "named": true
       },
@@ -115,6 +119,10 @@
       },
       {
         "type": "jinja_statement_inline",
+        "named": true
+      },
+      {
+        "type": "loose_assignment",
         "named": true
       },
       {
@@ -160,6 +168,44 @@
     ]
   },
   {
+    "type": "address_assignment",
+    "named": true,
+    "fields": {
+      "address": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "axis_word",
+            "named": true
+          },
+          {
+            "type": "parameter_word",
+            "named": true
+          },
+          {
+            "type": "spindle_word",
+            "named": true
+          }
+        ]
+      },
+      "value": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "bare_argument",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "argument_list",
     "named": true,
     "fields": {},
@@ -173,6 +219,10 @@
         },
         {
           "type": "keyword_argument",
+          "named": true
+        },
+        {
+          "type": "list_comment",
           "named": true
         },
         {
@@ -265,68 +315,24 @@
             "named": false
           },
           {
-            "type": "AND",
-            "named": false
-          },
-          {
-            "type": "IN",
-            "named": false
-          },
-          {
-            "type": "IS",
-            "named": false
-          },
-          {
-            "type": "MOD",
-            "named": false
-          },
-          {
-            "type": "OR",
-            "named": false
-          },
-          {
-            "type": "XOR",
-            "named": false
-          },
-          {
             "type": "^",
             "named": false
           },
           {
-            "type": "and",
-            "named": false
-          },
-          {
-            "type": "in",
-            "named": false
-          },
-          {
-            "type": "is",
-            "named": false
+            "type": "is_in_operator",
+            "named": true
           },
           {
             "type": "is_not_operator",
             "named": true
           },
           {
-            "type": "mod",
-            "named": false
-          },
-          {
             "type": "not_in_operator",
             "named": true
           },
           {
-            "type": "or",
-            "named": false
-          },
-          {
             "type": "text_comparison_operator",
             "named": true
-          },
-          {
-            "type": "xor",
-            "named": false
           },
           {
             "type": "||",
@@ -370,6 +376,10 @@
         {
           "type": "dict_entry",
           "named": true
+        },
+        {
+          "type": "list_comment",
+          "named": true
         }
       ]
     }
@@ -384,6 +394,10 @@
       "types": [
         {
           "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "list_comment",
           "named": true
         }
       ]
@@ -482,6 +496,10 @@
         "types": [
           {
             "type": "_expression",
+            "named": true
+          },
+          {
+            "type": "multiline_string_expression",
             "named": true
           }
         ]
@@ -664,6 +682,10 @@
           "named": true
         },
         {
+          "type": "bracket_expression",
+          "named": true
+        },
+        {
           "type": "colon",
           "named": true
         },
@@ -685,6 +707,10 @@
         },
         {
           "type": "klipper_option_text",
+          "named": true
+        },
+        {
+          "type": "named_argument",
           "named": true
         },
         {
@@ -724,14 +750,34 @@
       }
     },
     "children": {
-      "multiple": false,
+      "multiple": true,
       "required": false,
       "types": [
         {
           "type": "hash_comment",
           "named": true
+        },
+        {
+          "type": "klipper_option_text",
+          "named": true
         }
       ]
+    }
+  },
+  {
+    "type": "loose_assignment",
+    "named": true,
+    "fields": {
+      "value": {
+        "multiple": false,
+        "required": false,
+        "types": [
+          {
+            "type": "_expression",
+            "named": true
+          }
+        ]
+      }
     }
   },
   {
@@ -907,6 +953,11 @@
     }
   },
   {
+    "type": "parenthesized_comment",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "parenthesized_expression",
     "named": true,
     "fields": {},
@@ -1009,6 +1060,14 @@
         "types": [
           {
             "type": "identifier",
+            "named": true
+          },
+          {
+            "type": "parenthesized_expression",
+            "named": true
+          },
+          {
+            "type": "string",
             "named": true
           }
         ]
@@ -1364,12 +1423,21 @@
         {
           "type": "semicolon_comment",
           "named": true
+        },
+        {
+          "type": "star_line",
+          "named": true
         }
       ]
     }
   },
   {
     "type": "spaced_parameter_reference",
+    "named": true,
+    "fields": {}
+  },
+  {
+    "type": "star_line",
     "named": true,
     "fields": {}
   },
@@ -1383,6 +1451,10 @@
       "types": [
         {
           "type": "double_quoted_string",
+          "named": true
+        },
+        {
+          "type": "multiline_quoted_string",
           "named": true
         },
         {
@@ -1422,6 +1494,10 @@
       "types": [
         {
           "type": "_expression",
+          "named": true
+        },
+        {
+          "type": "list_comment",
           "named": true
         }
       ]
@@ -1574,30 +1650,6 @@
     "named": false
   },
   {
-    "type": "AND",
-    "named": false
-  },
-  {
-    "type": "IN",
-    "named": false
-  },
-  {
-    "type": "IS",
-    "named": false
-  },
-  {
-    "type": "MOD",
-    "named": false
-  },
-  {
-    "type": "OR",
-    "named": false
-  },
-  {
-    "type": "XOR",
-    "named": false
-  },
-  {
     "type": "[",
     "named": false
   },
@@ -1611,10 +1663,6 @@
   },
   {
     "type": "abort",
-    "named": false
-  },
-  {
-    "type": "and",
     "named": false
   },
   {
@@ -1762,8 +1810,8 @@
     "named": false
   },
   {
-    "type": "is",
-    "named": false
+    "type": "is_in_operator",
+    "named": true
   },
   {
     "type": "is_not_operator",
@@ -1786,6 +1834,10 @@
     "named": true
   },
   {
+    "type": "list_comment",
+    "named": true
+  },
+  {
     "type": "m_code",
     "named": true
   },
@@ -1794,8 +1846,8 @@
     "named": false
   },
   {
-    "type": "mod",
-    "named": false
+    "type": "multiline_quoted_string",
+    "named": true
   },
   {
     "type": "not_in_operator",
@@ -1826,10 +1878,6 @@
     "named": true
   },
   {
-    "type": "or",
-    "named": false
-  },
-  {
     "type": "parameter_reference",
     "named": true
   },
@@ -1842,11 +1890,11 @@
     "named": true
   },
   {
-    "type": "parenthesized_comment",
-    "named": true
+    "type": "raw",
+    "named": false
   },
   {
-    "type": "raw",
+    "type": "recursive",
     "named": false
   },
   {
@@ -1891,10 +1939,6 @@
   },
   {
     "type": "with",
-    "named": false
-  },
-  {
-    "type": "xor",
     "named": false
   },
   {

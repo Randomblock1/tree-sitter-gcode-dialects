@@ -21,7 +21,11 @@
         "ncc",
         "din",
         "mpf",
-        "spf"
+        "spf",
+        "mpt",
+        "eia",
+        "min",
+        "bfb"
       ],
       "injection-regex": "^(gcode|rrf|klipper|cnc)$",
       "class-name": "TreeSitterGcode"

@@ -21,6 +21,7 @@ const PREC = {
 // words (X10, E5), and LinuxCNC rejects exponents in words outright.
 const DECIMAL = String.raw`[-+]?(?:\d+(?:\.\d*)?|\.\d+)`;
 const CODE_NUMBER = String.raw`[-+]?\d+(?:\.\d+)?`;
+const NL_RUN = String.raw`(?:\r?\n[ \t]*)+`;
 
 module.exports = grammar({
   name: "gcode",
@@ -31,7 +32,11 @@ module.exports = grammar({
 
   supertypes: ($) => [$._expression, $._program_item],
 
-  conflicts: ($) => [[$._expression, $.multiline_string_expression]],
+  conflicts: ($) => [
+    [$._expression, $.multiline_string_expression],
+    // Newline runs between a tuple's elements and its close parenthesis.
+    [$.tuple_expression],
+  ],
 
   rules: {
     source_file: ($) =>
@@ -52,31 +57,55 @@ module.exports = grammar({
           $.rrf_output,
           $.o_statement,
           $.program_line,
+          $.star_line,
         ),
       ),
+
+    // Decorative separator lines ("* * * * *") in shop-floor Fanuc output.
+    star_line: ($) => seq(token(prec(-2, /\*[ \t*]*/)), $._newline),
 
     _newline: (_) => /\r?\n/,
 
     semicolon_comment: (_) => /;[^\r\n]*/,
-    hash_comment: (_) => choice("#", /#{3,}[^\r\n]*/, /#[^0-9<#\r\n][^\r\n]*/),
-    parenthesized_comment: (_) => token(prec(-1, /\([^()\r\n]*\)/)),
+    // "##" followed by a digit stays parameter indirection (Fanuc ##2);
+    // any other "##"-run is a comment.
+    hash_comment: (_) =>
+      choice(
+        "#",
+        /#{3,}[^\r\n]*/,
+        /##(?:[^0-9\r\n][^\r\n]*)?/,
+        /#[^0-9<#\r\n][^\r\n]*/,
+      ),
+    // One level of nesting: real Fanuc output contains "(A (B))" comments.
+    // The unterminated variant (prec -4) tolerates prose like "(The height is
+    // used only" in doc text; a real ")" on the line always wins.
+    parenthesized_comment: (_) =>
+      choice(
+        token(prec(-1, /\((?:[^()\r\n]|\([^()\r\n]*\))*\)/)),
+        token(prec(-4, /\([^()\r\n]*/)),
+      ),
 
     percent_line: ($) =>
       prec.right(seq("%", optional($.semicolon_comment), $._newline)),
 
+    // The optional trailing text tolerates usage-docstring continuation lines
+    // inside multiline option values ("[MINIMUM=<min>] [SPEED=<speed>]") —
+    // a flat line grammar cannot know they are still part of the value.
     klipper_section: ($) =>
       prec.right(
         5,
         seq(
           field("kind", $.section_start),
           optional(field("name", $.section_name)),
-          "]",
+          optional("]"),
+          optional($.klipper_option_text),
           optional($.hash_comment),
           $._newline,
         ),
       ),
     section_start: (_) => /\[[A-Za-z_][A-Za-z0-9_-]*/,
-    section_name: (_) => /[A-Za-z0-9_.~*\/-]+(?:[ \t]+[A-Za-z0-9_.~*\/-]+)*/,
+    section_name: (_) =>
+      /[A-Za-z0-9_.~*<>=|,+\/-]+(?:[ \t]+[A-Za-z0-9_.~*<>=|,+\/-]+)*/,
 
     klipper_option: ($) =>
       prec.right(
@@ -87,6 +116,8 @@ module.exports = grammar({
             repeat1(
               choice(
                 $._template_item,
+                $.bracket_expression,
+                $.named_argument,
                 $.bare_argument,
                 $.string,
                 $.number,
@@ -100,9 +131,22 @@ module.exports = grammar({
           $._newline,
         ),
       ),
-    option_name: (_) => token(prec(10, /[A-Za-z_][A-Za-z0-9_]*(?::|[ \t]*=)/)),
+    // The "=" branch requires a second letter/underscore in the name so that
+    // Siemens address assignments at line start (S1=5000, R10=R11+2) stay
+    // program lines instead of lexing as a Klipper option.
+    option_name: (_) =>
+      token(
+        prec(
+          10,
+          /(?:[A-Za-z_][A-Za-z0-9_]*:|[A-Za-z_][0-9]*[A-Za-z_][A-Za-z0-9_]*[ \t]*=)/,
+        ),
+      ),
     klipper_option_text: (_) => token(prec(-1, /[^#\r\n]+/)),
     klipper_inline_comment: (_) => /#[^\r\n]*/,
+    // Comments on elements of multiline list/dict values. The mandatory blank
+    // after "#" keeps RRF's length operator (#param.S) and LinuxCNC's
+    // indirection (#[expr]) out of comment territory.
+    list_comment: (_) => token(/#[ \t][^\r\n]*/),
     klipper_glyph_line: ($) => seq($.glyph_pixels, $._newline),
     // Minimum 5: hd44780 glyph rows are 5 wide, ST7920 rows 16 — while a
     // shorter dot run at line start ("... loading") is prose, not pixels.
@@ -191,14 +235,22 @@ module.exports = grammar({
       prec.right(
         seq(
           optional($.block_delete),
-          optional($.line_number),
           choice(
-            seq(field("command", $._command), repeat($._program_item)),
-            repeat1($._program_item),
+            // A bare block number (with or without a trailing comment) is a
+            // complete line — Siemens and Fanuc output is full of them.
+            seq($.line_number, optional($._line_body)),
+            $._line_body,
           ),
           optional($.checksum),
           optional(choice($.semicolon_comment, $.hash_comment)),
           $._newline,
+        ),
+      ),
+    _line_body: ($) =>
+      prec.right(
+        choice(
+          seq(field("command", $._command), repeat($._program_item)),
+          repeat1($._program_item),
         ),
       ),
 
@@ -219,6 +271,7 @@ module.exports = grammar({
 
     _program_item: ($) =>
       choice(
+        $.address_assignment,
         $.axis_word,
         $.feed_word,
         $.spindle_word,
@@ -238,7 +291,25 @@ module.exports = grammar({
         $.number,
         $.colon,
         $.comma,
+        $.loose_assignment,
         $.bare_argument,
+      ),
+
+    // Siemens/Fanuc assignment with the "=" detached from its target:
+    // "R1 = LAYER_HEIGHT * 4", "ACC[E]=50", "DEF REAL A = 2, B = 9". The
+    // target is whatever program item came before; only "=" and the value
+    // are grouped.
+    loose_assignment: ($) =>
+      prec.right(seq("=", optional(field("value", $._expression)))),
+
+    // Siemens-style address assignment: X1=50, S1=5000, R10=R11+2. The "="
+    // must be immediate — the axis/parameter token has already won the lexer
+    // race by the time it appears, so the pairing happens at parse level.
+    address_assignment: ($) =>
+      seq(
+        field("address", choice($.axis_word, $.spindle_word, $.parameter_word)),
+        token.immediate("="),
+        field("value", choice($._expression, $.bare_argument)),
       ),
 
     axis_word: (_) => letterWord("XYZABCUVWExyzabcuvwe", 7),
@@ -274,25 +345,43 @@ module.exports = grammar({
       ),
     argument_name: (_) => /[A-Za-z_][A-Za-z0-9_]*=/,
     parameter_assignment: ($) =>
-      seq(
-        field("target", $.parameter_reference),
-        "=",
-        field("value", $._expression),
+      prec(
+        1,
+        seq(
+          field("target", $.parameter_reference),
+          "=",
+          field("value", $._expression),
+        ),
       ),
 
     jinja_statement_inline: ($) =>
       seq(
         choice("{%", "{%-"),
         field("directive", $.jinja_directive),
-        choice("%}", "-%}"),
+        // prec(2) so "-%}" outranks the prec-1 "-" operator after an
+        // expression — "defined -%}" must close the statement, not subtract.
+        choice("%}", token(prec(2, "-%}"))),
       ),
     jinja_directive: ($) =>
       choice(
-        seq("set", $._assignable, "=", $._expression),
+        seq(
+          "set",
+          commaSep1($._assignable),
+          "=",
+          repeat($._newline),
+          commaSep1($._expression),
+        ),
         seq(choice("if", "elif"), $._expression),
         "else",
         "endif",
-        seq("for", commaSep1($.identifier), "in", $._expression),
+        seq(
+          "for",
+          commaSep1($.identifier),
+          "in",
+          $._expression,
+          optional(seq("if", $._expression)),
+          optional("recursive"),
+        ),
         "endfor",
         seq("macro", $.identifier, optional($.argument_list)),
         "endmacro",
@@ -352,12 +441,23 @@ module.exports = grammar({
         $.filter_expression,
       ),
 
+    // Trailing commas are load-bearing for RRF: "{pi,}" is a one-element
+    // array while "{pi}" is a scalar.
     brace_expression: ($) =>
-      delimitedList($, "{", "}", choice($._expression, $.dict_entry)),
-    bracket_expression: ($) => delimitedList($, "[", "]", $._expression),
+      delimitedList($, "{", "}", choice($._expression, $.dict_entry), {
+        trailingComma: true,
+      }),
+    bracket_expression: ($) =>
+      delimitedList($, "[", "]", $._expression, { trailingComma: true }),
     dict_entry: ($) =>
-      seq(field("key", $._expression), ":", field("value", $._expression)),
-    parenthesized_expression: ($) => seq("(", $._expression, ")"),
+      seq(
+        field("key", $._expression),
+        ":",
+        repeat($._newline),
+        field("value", choice($.multiline_string_expression, $._expression)),
+      ),
+    parenthesized_expression: ($) =>
+      seq("(", repeat($._newline), $._expression, repeat($._newline), ")"),
     tuple_expression: ($) =>
       seq(
         "(",
@@ -379,7 +479,10 @@ module.exports = grammar({
       prec.left(
         PREC.POSTFIX,
         seq(
-          field("object", $.identifier),
+          field(
+            "object",
+            choice($.identifier, $.string, $.parenthesized_expression),
+          ),
           repeat1(choice($.member_access, $.subscript_access)),
         ),
       ),
@@ -448,27 +551,64 @@ module.exports = grammar({
 
     binary_expression: ($) =>
       choice(
-        ...binaryLeft(PREC.OR, ["or", "OR", "||"], $),
-        ...binaryLeft(PREC.AND, ["and", "AND", "xor", "XOR", "&&"], $),
+        ...binaryLeft(
+          PREC.OR,
+          [
+            caseInsensitiveWords(["or"]),
+            "||",
+            continuationWordOp("or"),
+            continuationOp("||"),
+          ],
+          $,
+        ),
+        ...binaryLeft(
+          PREC.AND,
+          [
+            caseInsensitiveWords(["and", "xor"]),
+            "&&",
+            continuationWordOp("and"),
+            continuationOp("&&"),
+          ],
+          $,
+        ),
         ...binaryLeft(
           PREC.COMPARE,
-          ["==", "=", "!=", "<>", "<=", ">=", "<", ">", "in", "IN", "is", "IS"],
+          [
+            "==",
+            "=",
+            "!=",
+            "<>",
+            "<=",
+            ">=",
+            "<",
+            ">",
+            caseInsensitiveWords(["in", "is"]),
+          ],
           $,
         ),
         ...binaryLeft(PREC.COMPARE, [$.text_comparison_operator], $),
         ...binaryLeft(
           PREC.COMPARE + 1,
-          [$.not_in_operator, $.is_not_operator],
+          [$.not_in_operator, $.is_not_operator, $.is_in_operator],
           $,
         ),
-        ...binaryLeft(PREC.CONCAT, ["^", "~"], $),
-        ...binaryLeft(PREC.ADD, ["+", "-"], $),
-        ...binaryLeft(PREC.MULTIPLY, ["*", "/", "//", "%", "mod", "MOD"], $),
+        ...binaryLeft(PREC.CONCAT, ["^", "~", continuationOp("~")], $),
+        // token(prec(1)) so that mid-expression the lexer picks the shorter
+        // operator over a longer signed number ("100-10" is a subtraction,
+        // not 100 followed by -10) and over a checksum ("2*3" in a value is
+        // multiplication). States where only one reading is valid are
+        // unaffected.
+        ...binaryLeft(PREC.ADD, [token(prec(1, "+")), token(prec(1, "-"))], $),
+        ...binaryLeft(
+          PREC.MULTIPLY,
+          [token(prec(1, "*")), "/", "//", "%", caseInsensitiveWords(["mod"])],
+          $,
+        ),
         prec.right(
           PREC.POWER,
           seq(
             field("left", $._expression),
-            field("operator", "**"),
+            field("operator", token(prec(1, "**"))),
             field("right", $._expression),
           ),
         ),
@@ -479,7 +619,15 @@ module.exports = grammar({
         PREC.CONDITIONAL,
         choice(
           seq($._expression, "?", $._expression, ":", $._expression),
-          seq($._expression, "if", $._expression, "else", $._expression),
+          seq(
+            $._expression,
+            "if",
+            repeat($._newline),
+            $._expression,
+            "else",
+            repeat($._newline),
+            $._expression,
+          ),
         ),
       ),
 
@@ -488,7 +636,8 @@ module.exports = grammar({
         PREC.POSTFIX,
         seq(
           field("value", $._expression),
-          "|",
+          choice("|", continuationOp("|")),
+          repeat($._newline),
           field("filter", $.identifier),
           optional($.argument_list),
         ),
@@ -498,6 +647,8 @@ module.exports = grammar({
       new RegExp(`${caseInsensitive("not")}[ \\t]+${caseInsensitive("in")}`),
     is_not_operator: (_) =>
       new RegExp(`${caseInsensitive("is")}[ \\t]+${caseInsensitive("not")}`),
+    is_in_operator: (_) =>
+      new RegExp(`${caseInsensitive("is")}[ \\t]+${caseInsensitive("in")}`),
     not_operator: (_) =>
       token(prec(2, new RegExp(`${caseInsensitive("not")}[ \\t]+`))),
     text_comparison_operator: (_) =>
@@ -508,9 +659,19 @@ module.exports = grammar({
     identifier: (_) => token(prec(1, /[A-Za-z_][A-Za-z0-9_]*/)),
     number: (_) =>
       /[-+]?(?:(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?|0[xX][0-9A-Fa-f]+)/,
-    string: ($) => choice($.double_quoted_string, $.single_quoted_string),
+    string: ($) =>
+      choice(
+        $.double_quoted_string,
+        $.single_quoted_string,
+        $.multiline_quoted_string,
+      ),
+    // Jinja strings may span lines (jschuh-style usage docstrings). prec -3:
+    // when the closing quote is on the same line, the regular tokens win.
+    multiline_quoted_string: (_) =>
+      token(prec(-3, seq('"', repeat(choice(/[^"\\]/, /\\./, '""')), '"'))),
+    // '""' is RRF's escape for a literal quote inside a string.
     double_quoted_string: (_) =>
-      token(seq('"', repeat(choice(/[^"\\\r\n]/, /\\./)), '"')),
+      token(seq('"', repeat(choice(/[^"\\\r\n]/, /\\./, '""')), '"')),
     single_quoted_string: (_) =>
       token(seq("'", repeat(choice(/[^'\\\r\n]/, /\\./)), "'")),
     boolean: (_) => token(prec(2, caseInsensitiveWords(["true", "false"]))),
@@ -546,18 +707,21 @@ function rrfLine($, keyword, ...parts) {
 
 // Newline-tolerant delimited list; trailing commas only where a dialect
 // actually allows them (call argument lists).
+// The newline-prefixed close variant lets a delimiter on its own line end
+// the list even when an item (a string-concatenation chain, say) could also
+// have continued across that newline.
 function delimitedList($, open, close, item, { trailingComma = false } = {}) {
   return seq(
     open,
-    repeat($._newline),
+    listPadding($),
     optional(
       seq(
         commaSepWithNewlines1(item, $),
         ...(trailingComma ? [optional(",")] : []),
-        repeat($._newline),
+        listPadding($),
       ),
     ),
-    close,
+    choice(close, token(new RegExp(NL_RUN + "\\" + close))),
   );
 }
 
@@ -575,10 +739,20 @@ function commaSep1(rule) {
   return seq(rule, repeat(seq(",", rule)));
 }
 
-function commaSepWithNewlines1(rule, $) {
-  return seq(rule, repeat(seq(",", repeat($._newline), rule)));
+// Multiline Klipper list/dict values carry per-element "#" comments.
+function listPadding($) {
+  return repeat(choice($._newline, $.list_comment));
 }
 
+function commaSepWithNewlines1(rule, $) {
+  return seq(rule, repeat(seq(",", listPadding($), rule)));
+}
+
+// Newlines may follow the operator: brace expressions in RRF macros wrap
+// long conditions after "&&". A newline BEFORE the operator (Jinja macros
+// wrap before "or") cannot be a grammar-level repeat — the parser would have
+// to pick the operator's precedence before seeing it — so continuationOp
+// bakes the newline run into the operator token instead.
 function binaryLeft(precedence, operators, $) {
   return operators.map((operator) =>
     prec.left(
@@ -586,10 +760,22 @@ function binaryLeft(precedence, operators, $) {
       seq(
         field("left", $._expression),
         field("operator", operator),
+        repeat($._newline),
         field("right", $._expression),
       ),
     ),
   );
+}
+
+// A word operator at the start of a continuation line. The trailing blank
+// stands in for a word boundary (tree-sitter regex has no lookahead), so
+// "\nor " continues an expression while "\norder" starts a new line.
+function continuationWordOp(word) {
+  return token(new RegExp(`${NL_RUN}${caseInsensitive(word)}[ \\t]`));
+}
+
+function continuationOp(symbol) {
+  return token(new RegExp(NL_RUN + symbol.replace(/[|&]/g, "\\$&")));
 }
 
 function caseInsensitive(word) {
