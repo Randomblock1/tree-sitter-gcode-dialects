@@ -40,10 +40,13 @@
     "test:queries": "node scripts/check-queries.mjs",
     "parse:fixtures": "node scripts/test.mjs --fixtures-only",
     "validate:corpora": "node scripts/validate-corpora.mjs",
+    "fuzz": "node scripts/fuzz.mjs",
     "format": "prettier --write grammar.js",
     "format:check": "prettier --check grammar.js"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["tree-sitter-cli"]
+    "onlyBuiltDependencies": [
+      "tree-sitter-cli"
+    ]
   }
 }
