@@ -8,10 +8,11 @@ This grammar backs the [Randomblock1/zed-gcode](https://github.com/Randomblock1/
 
 ## Dialect coverage
 
-- **Marlin / RepRap / slicer output** — commands, checksummed `N`-lines, vendor arguments, comments
-- **RepRapFirmware** — `var`, `global`, `set`, `if`/`elif`/`else`, `while`, `echo`, `abort`; `{...}` expressions in operands; object-model paths such as `move.axes[global.AXIS].machinePosition`; strings, arrays, calls, and the full operator set
-- **Klipper** — sections and options (including `[include]` globs), extended commands, macro parameters, Jinja statements/expressions/comments with whitespace control, display glyph blocks
-- **RS274/NGC** — parameters (`#1`, `#<named>`), bracket expressions, and O-code flow control with numeric and named labels
+- **Marlin / RepRap / slicer output** — commands, checksummed `N`-lines, vendor arguments, comments, thumbnails and settings trailers
+- **RepRapFirmware** — `var`, `global`, `set`, `if`/`elif`/`else`, `while`, `echo`, `abort`; `{...}` expressions in operands; object-model paths such as `move.axes[global.AXIS].machinePosition`; strings with `""` escapes, arrays with trailing commas, calls, and the full operator set
+- **Klipper** — sections and options (including `[include]` globs), extended commands, macro parameters, Jinja statements/expressions/comments with whitespace control, multiline Python-literal variables, display glyph blocks
+- **RS274/NGC / Fanuc** — parameters (`#1`, `#<named>`, `#[expr]` indirection), bracket expressions, O-code flow control with numeric and named labels, glued Fanuc forms (`IF[#7NE#0]GOTO10`, `WHILE[…]DO1`), `%` markers, active comments
+- **Siemens SINUMERIK** — address assignments (`X1=50`, `S1=5000`, `R10=R11+2`), bare block numbers, `GOTOB`/`GOTOF` with labels, cycle calls; see the scope note in [docs/REFERENCES.md](docs/REFERENCES.md)
 
 ## Usage
 
@@ -23,11 +24,15 @@ npm test
 
 `npm test` regenerates the parser (so `src/` cannot silently drift from `grammar.js`), runs the corpus tests, parses every file in `examples/` rejecting any `ERROR` or missing node, and compiles every query in `queries/`.
 
-See [docs/VALIDATION.md](docs/VALIDATION.md) for the pinned upstream compatibility run — 228 Klipper configs, 570 Duet3D RRF files, and 247 LinuxCNC programs all parse without recovery nodes — reproducible with:
+See [docs/VALIDATION.md](docs/VALIDATION.md) for the pinned upstream compatibility run — 2,376 of 2,393 real-world files across 15 corpora (Klipper configs and macro packs, Duet RRF machine configs and meta-G-code operation systems, slicer output, LinuxCNC and Fanuc shop programs, Siemens MPF part programs) parse without recovery nodes; the 17 exceptions are pinned, classified known failures. Reproducible with:
 
 ```sh
 npm run validate:corpora
 ```
+
+[docs/REFERENCES.md](docs/REFERENCES.md) lists the authoritative language reference for each dialect, including the firmware parser sources that settle disputes where documentation is wrong.
+
+`npm run fuzz` runs a seeded grammar-directed fuzzer: generated valid-by-construction programs for every dialect must parse without a single `ERROR`, corrupted fixtures must never crash or hang the parser, and `tree-sitter fuzz` checks incremental-reparse consistency over the corpus. Deterministic by default; pass `-- --seed N` to explore.
 
 ## Design
 
