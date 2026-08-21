@@ -1,0 +1,49 @@
+{
+  "name": "tree-sitter-gcode",
+  "version": "0.1.0",
+  "description": "A tolerant Tree-sitter grammar for printer and CNC G-code dialects",
+  "license": "MIT",
+  "author": "Benjamin Gonzalez",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Randomblock1/tree-sitter-gcode.git"
+  },
+  "main": "bindings/node",
+  "types": "bindings/node",
+  "files": [
+    "grammar.js",
+    "tree-sitter.json",
+    "binding.gyp",
+    "bindings/node/*",
+    "queries/*",
+    "src/**"
+  ],
+  "dependencies": {
+    "node-addon-api": "^8.5.0",
+    "node-gyp-build": "^4.8.4"
+  },
+  "devDependencies": {
+    "prettier": "^3.6.2",
+    "tree-sitter-cli": "^0.25.10"
+  },
+  "peerDependencies": {
+    "tree-sitter": "^0.25.0"
+  },
+  "peerDependenciesMeta": {
+    "tree-sitter": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "generate": "tree-sitter generate",
+    "test": "node scripts/test.mjs",
+    "test:queries": "node scripts/check-queries.mjs",
+    "parse:fixtures": "node scripts/test.mjs --fixtures-only",
+    "validate:corpora": "node scripts/validate-corpora.mjs",
+    "format": "prettier --write grammar.js",
+    "format:check": "prettier --check grammar.js"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["tree-sitter-cli"]
+  }
+}

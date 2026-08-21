@@ -1,0 +1,651 @@
+==================
+RepRapFirmware meta commands and object model
+==================
+
+var nearEdge = move.axes[global.ENDSTOP_AXIS].machinePosition
+G1 Z{global.CLEAR_DEG * global.CW_SIGN} F{global.FEED}
+if !sensors.endstops[global.ENDSTOP_AXIS].triggered
+  set global.LAST_ERROR_CODE = 505
+  echo {"ABORT - " ^ global.LAST_ERROR}
+  abort global.LAST_ERROR
+else
+  echo "measurement ok"
+while iterations < 10
+  continue
+set global.WIDTH = abs(move.axes[global.ENDSTOP_AXIS].machinePosition - var.nearEdge)
+
+---
+
+(source_file
+  (rrf_declaration
+    (rrf_declaration_keyword)
+    (identifier)
+    (reference_expression
+      (identifier)
+      (member_access
+        (identifier))
+      (subscript_access
+        (reference_expression
+          (identifier)
+          (member_access
+            (identifier))))
+      (member_access
+        (identifier))))
+  (program_line
+    (g_code)
+    (expression_word
+      (brace_word_start)
+      (binary_expression
+        (reference_expression
+          (identifier)
+          (member_access
+            (identifier)))
+        (reference_expression
+          (identifier)
+          (member_access
+            (identifier)))))
+    (expression_word
+      (brace_word_start)
+      (reference_expression
+        (identifier)
+        (member_access
+          (identifier)))))
+  (rrf_control
+    (rrf_control_keyword)
+    (unary_expression
+      (reference_expression
+        (identifier)
+        (member_access
+          (identifier))
+        (subscript_access
+          (reference_expression
+            (identifier)
+            (member_access
+              (identifier))))
+        (member_access
+          (identifier)))))
+  (rrf_assignment
+    (rrf_set_keyword)
+    (reference_expression
+      (identifier)
+      (member_access
+        (identifier)))
+    (number))
+  (rrf_output
+    (rrf_output_keyword)
+    (brace_expression
+      (binary_expression
+        (string
+          (double_quoted_string))
+        (reference_expression
+          (identifier)
+          (member_access
+            (identifier))))))
+  (rrf_output
+    (rrf_output_keyword)
+    (reference_expression
+      (identifier)
+      (member_access
+        (identifier))))
+  (rrf_else
+    (rrf_else_keyword))
+  (rrf_output
+    (rrf_output_keyword)
+    (string
+      (double_quoted_string)))
+  (rrf_control
+    (rrf_control_keyword)
+    (binary_expression
+      (identifier)
+      (number)))
+  (rrf_loop_control
+    (rrf_loop_control_keyword))
+  (rrf_assignment
+    (rrf_set_keyword)
+    (reference_expression
+      (identifier)
+      (member_access
+        (identifier)))
+    (call_expression
+      (identifier)
+      (argument_list
+        (binary_expression
+          (reference_expression
+            (identifier)
+            (member_access
+              (identifier))
+            (subscript_access
+              (reference_expression
+                (identifier)
+                (member_access
+                  (identifier))))
+            (member_access
+              (identifier)))
+          (reference_expression
+            (identifier)
+            (member_access
+              (identifier))))))))
+
+==================
+Klipper config and Jinja macro
+==================
+
+[gcode_macro CLEAN_NOZZLE]
+description: Clean the nozzle
+variable_wipe_count: 2
+rename_existing = CLEAN_NOZZLE_BASE
+gcode:
+  {% set count = params.COUNT|default(2)|int %}
+  {% for wipe in range(count) %}
+    G0 X{printer.toolhead.position.x + wipe} F12000
+  {% endfor %}
+  { action_respond_info("done") }
+
+---
+
+(source_file
+  (klipper_section
+    (section_start)
+    (section_name))
+  (klipper_option
+    (option_name)
+    (klipper_option_text))
+  (klipper_option
+    (option_name)
+    (number))
+  (klipper_option
+    (option_name)
+    (klipper_option_text))
+  (klipper_option
+    (option_name))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive
+        (identifier)
+        (filter_expression
+          (filter_expression
+            (reference_expression
+              (identifier)
+              (member_access
+                (identifier)))
+            (identifier)
+            (argument_list
+              (number)))
+          (identifier)))))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive
+        (identifier)
+        (call_expression
+          (identifier)
+          (argument_list
+            (identifier))))))
+  (program_line
+    (g_code)
+    (expression_word
+      (brace_word_start)
+      (binary_expression
+        (reference_expression
+          (identifier)
+          (member_access
+            (identifier))
+          (member_access
+            (identifier))
+          (member_access
+            (identifier)))
+        (identifier)))
+    (feed_word))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive)))
+  (program_line
+    (brace_expression
+      (call_expression
+        (identifier)
+        (argument_list
+          (string
+            (double_quoted_string)))))))
+
+==================
+Marlin and RepRap printer commands
+==================
+
+N42 G1 X10.2 Y20.4 E0.1234 F1800*73
+M117 Printing layer 1
+M118 E1 A1 action:notification Print_started
+M98 P"0:/sys/homeall.g"
+M563 P1 D0:1 H1:2 F0:1
+
+---
+
+(source_file
+  (program_line
+    (line_number)
+    (g_code)
+    (axis_word)
+    (axis_word)
+    (axis_word)
+    (feed_word)
+    (checksum))
+  (program_line
+    (m_code)
+    (bare_argument)
+    (bare_argument)
+    (number))
+  (program_line
+    (m_code)
+    (axis_word)
+    (axis_word)
+    (bare_argument)
+    (colon)
+    (bare_argument)
+    (bare_argument))
+  (program_line
+    (m_code)
+    (quoted_word))
+  (program_line
+    (m_code)
+    (parameter_word)
+    (parameter_word)
+    (colon)
+    (number)
+    (parameter_word)
+    (colon)
+    (number)
+    (feed_word)
+    (colon)
+    (number)))
+
+==================
+LinuxCNC parameters expressions and O-codes
+==================
+
+%
+#<_depth> = -2.5
+#1 = [#<_depth> / 5]
+/ N100 G1 X[#1 + 2] Y#<_depth> (roughing pass)
+o<pocket> sub
+o100 if [#1 LT 0]
+G1 Z#1 F120
+o100 endif
+o<pocket> endsub
+M30
+%
+
+---
+
+(source_file
+  (percent_line)
+  (program_line
+    (parameter_assignment
+      (parameter_reference)
+      (number)))
+  (program_line
+    (parameter_assignment
+      (parameter_reference)
+      (bracket_expression
+        (binary_expression
+          (parameter_reference)
+          (number)))))
+  (program_line
+    (block_delete)
+    (line_number)
+    (g_code)
+    (expression_word
+      (bracket_word_start)
+      (binary_expression
+        (parameter_reference)
+        (number)))
+    (expression_word
+      (parameter_reference_word))
+    (parenthesized_comment))
+  (o_statement
+    (o_label)
+    (o_keyword))
+  (o_statement
+    (o_label)
+    (o_keyword)
+    (bracket_expression
+      (binary_expression
+        (parameter_reference)
+        (text_comparison_operator)
+        (number))))
+  (program_line
+    (g_code)
+    (expression_word
+      (parameter_reference_word))
+    (feed_word))
+  (o_statement
+    (o_label)
+    (o_keyword))
+  (o_statement
+    (o_label)
+    (o_keyword))
+  (program_line
+    (m_code))
+  (percent_line))
+
+==================
+Expression forms shared by RRF and Klipper
+==================
+
+set global.answer = condition ? max(values[0], 42) : 0
+echo {exists(global.answer) && global.answer >= 42}
+M117 {params.VALUE|default("n/a")}
+
+---
+
+(source_file
+  (rrf_assignment
+    (rrf_set_keyword)
+    (reference_expression
+      (identifier)
+      (member_access
+        (identifier)))
+    (conditional_expression
+      (identifier)
+      (call_expression
+        (identifier)
+        (argument_list
+          (reference_expression
+            (identifier)
+            (subscript_access
+              (number)))
+          (number)))
+      (number)))
+  (rrf_output
+    (rrf_output_keyword)
+    (brace_expression
+      (binary_expression
+        (call_expression
+          (identifier)
+          (argument_list
+            (reference_expression
+              (identifier)
+              (member_access
+                (identifier)))))
+        (binary_expression
+          (reference_expression
+            (identifier)
+            (member_access
+              (identifier)))
+          (number)))))
+  (program_line
+    (m_code)
+    (brace_expression
+      (filter_expression
+        (reference_expression
+          (identifier)
+          (member_access
+            (identifier)))
+        (identifier)
+        (argument_list
+          (string
+            (double_quoted_string)))))))
+
+==================
+Compact and checksummed command lines
+==================
+
+N10G01X1.Y1.F100.
+G1X10Y20E0.5
+G28XY
+N234 G1 X-5 Y+2 *64
+G1 X5 ; rapid to start
+M117 Layer 2 of 30
+T1
+M23 PRINT1A.GCO
+
+---
+
+(source_file
+  (program_line
+    (line_number)
+    (g_code)
+    (axis_word)
+    (axis_word)
+    (feed_word))
+  (program_line
+    (g_code)
+    (axis_word)
+    (axis_word)
+    (axis_word))
+  (program_line
+    (g_code)
+    (bare_argument))
+  (program_line
+    (line_number)
+    (g_code)
+    (axis_word)
+    (axis_word)
+    (checksum))
+  (program_line
+    (g_code)
+    (axis_word)
+    (semicolon_comment))
+  (program_line
+    (m_code)
+    (bare_argument)
+    (number)
+    (bare_argument)
+    (number))
+  (program_line
+    (tool_code))
+  (program_line
+    (m_code)
+    (bare_argument)
+    (bare_argument)))
+
+==================
+Klipper includes, glyphs, and extended commands
+==================
+
+[include KAMP/*.cfg]
+[include ~/printer_data/config/*.cfg]
+[display_glyph fan]
+data:
+  ****............
+  .....*****......
+SAVE_GCODE_STATE NAME=clean_state
+SET_HEATER_TEMPERATURE HEATER=extruder TARGET=100 ; heat
+SET_PIN PIN=my_pin VALUE=1 # toggle
+gcode: {# inline note #} G28
+
+---
+
+(source_file
+  (klipper_section
+    (section_start)
+    (section_name))
+  (klipper_section
+    (section_start)
+    (section_name))
+  (klipper_section
+    (section_start)
+    (section_name))
+  (klipper_option
+    (option_name))
+  (klipper_glyph_line
+    (glyph_pixels))
+  (klipper_glyph_line
+    (glyph_pixels))
+  (program_line
+    (extended_command)
+    (named_argument
+      (argument_name)
+      (identifier)))
+  (program_line
+    (extended_command)
+    (named_argument
+      (argument_name)
+      (identifier))
+    (named_argument
+      (argument_name)
+      (number))
+    (semicolon_comment))
+  (program_line
+    (extended_command)
+    (named_argument
+      (argument_name)
+      (identifier))
+    (named_argument
+      (argument_name)
+      (number))
+    (hash_comment))
+  (klipper_option
+    (option_name)
+    (jinja_comment_inline)
+    (bare_argument)))
+
+==================
+Jinja statements comments and whitespace control
+==================
+
+{%- if params.X is not defined -%}
+{% for k, v in d.items() %}
+{# a # note #}
+{% set flag = namespace(found=false) %}
+{% endfor %}
+{%- endif %}
+
+---
+
+(source_file
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive
+        (binary_expression
+          (reference_expression
+            (identifier)
+            (member_access
+              (identifier)))
+          (is_not_operator)
+          (identifier)))))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive
+        (identifier)
+        (identifier)
+        (call_expression
+          (reference_expression
+            (identifier)
+            (member_access
+              (identifier)))
+          (argument_list)))))
+  (program_line
+    (jinja_comment_inline))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive
+        (identifier)
+        (call_expression
+          (identifier)
+          (argument_list
+            (keyword_argument
+              (identifier)
+              (boolean)))))))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive)))
+  (program_line
+    (jinja_statement_inline
+      (jinja_directive))))
+
+==================
+RRF control flow loops and literals
+==================
+
+if move.axes[0].homed
+  echo "homed"
+elif sensors.gpIn[1].value < 100
+  M291 P"probe" S1
+else
+  break
+while iterations < 5
+  continue
+var list = {1, 2, 3}
+var pair = (1, 2)
+var flag = true
+var nothing = null
+if "x" Not In global.names
+  abort "missing"
+
+---
+
+(source_file
+  (rrf_control
+    (rrf_control_keyword)
+    (reference_expression
+      (identifier)
+      (member_access
+        (identifier))
+      (subscript_access
+        (number))
+      (member_access
+        (identifier))))
+  (rrf_output
+    (rrf_output_keyword)
+    (string
+      (double_quoted_string)))
+  (rrf_control
+    (rrf_control_keyword)
+    (binary_expression
+      (reference_expression
+        (identifier)
+        (member_access
+          (identifier))
+        (subscript_access
+          (number))
+        (member_access
+          (identifier)))
+      (number)))
+  (program_line
+    (m_code)
+    (quoted_word)
+    (spindle_word))
+  (rrf_else
+    (rrf_else_keyword))
+  (rrf_loop_control
+    (rrf_loop_control_keyword))
+  (rrf_control
+    (rrf_control_keyword)
+    (binary_expression
+      (identifier)
+      (number)))
+  (rrf_loop_control
+    (rrf_loop_control_keyword))
+  (rrf_declaration
+    (rrf_declaration_keyword)
+    (identifier)
+    (brace_expression
+      (number)
+      (number)
+      (number)))
+  (rrf_declaration
+    (rrf_declaration_keyword)
+    (identifier)
+    (tuple_expression
+      (number)
+      (number)))
+  (rrf_declaration
+    (rrf_declaration_keyword)
+    (identifier)
+    (boolean))
+  (rrf_declaration
+    (rrf_declaration_keyword)
+    (identifier)
+    (null))
+  (rrf_control
+    (rrf_control_keyword)
+    (binary_expression
+      (string
+        (double_quoted_string))
+      (not_in_operator)
+      (reference_expression
+        (identifier)
+        (member_access
+          (identifier)))))
+  (rrf_output
+    (rrf_output_keyword)
+    (string
+      (double_quoted_string))))

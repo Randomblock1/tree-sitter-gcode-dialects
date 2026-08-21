@@ -1,0 +1,18 @@
+%
+(mill a small pocket)
+#<_depth> = -2.5
+#1 = [#<_depth> / 5]
+G17 G21 G40 G49 G54 G80 G90 G94
+o<pocket> sub
+  o100 if [#1 LT 0]
+    G1 Z#1 F120
+  o100 elseif [#1 EQ 0]
+    (MSG, already at surface)
+  o100 else
+    G0 Z1
+  o100 endif
+o<pocket> endsub
+o<pocket> call
+M30
+%
+

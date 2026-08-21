@@ -1,0 +1,43 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "gcode",
+      "camelcase": "Gcode",
+      "title": "G-code",
+      "scope": "source.gcode",
+      "file-types": [
+        "gcode",
+        "gco",
+        "gc",
+        "g",
+        "rrf",
+        "rrfg",
+        "cfg",
+        "nc",
+        "ngc",
+        "tap",
+        "cnc",
+        "ncc",
+        "din",
+        "mpf",
+        "spf"
+      ],
+      "injection-regex": "^(gcode|rrf|klipper|cnc)$",
+      "class-name": "TreeSitterGcode"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "Marlin, RepRapFirmware, Klipper macro, and RS274/LinuxCNC syntax",
+    "authors": [{ "name": "Benjamin Gonzalez" }],
+    "links": {
+      "repository": "https://github.com/Randomblock1/tree-sitter-gcode"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "node": true
+  }
+}

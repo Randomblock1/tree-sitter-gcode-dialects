@@ -1,0 +1,34 @@
+# tree-sitter-gcode
+
+A tolerant Tree-sitter grammar for the G-code people edit on real printers and CNC machines: Marlin/RepRap-style firmware output, RepRapFirmware meta commands, Klipper configuration and macros, and RS274/NGC (LinuxCNC/Fanuc) programs. It is independently authored, not a fork of `ChocolateNao/tree-sitter-gcode`.
+
+The parser deliberately accepts unknown extended commands and vendor arguments, and understands space-free compact lines (`N10G01X1.Y1.F100.` splits into its words). Firmware remains the authority on whether a particular command exists and whether its operands are valid; the grammar's job is to preserve useful syntax structure and highlighting without breaking the rest of a file.
+
+This grammar backs the [Randomblock1/zed-gcode](https://github.com/Randomblock1/zed-gcode) Zed extension, which layers four language modes (3D printer, RepRapFirmware, Klipper config, CNC) on this one parser.
+
+## Dialect coverage
+
+- **Marlin / RepRap / slicer output** — commands, checksummed `N`-lines, vendor arguments, comments
+- **RepRapFirmware** — `var`, `global`, `set`, `if`/`elif`/`else`, `while`, `echo`, `abort`; `{...}` expressions in operands; object-model paths such as `move.axes[global.AXIS].machinePosition`; strings, arrays, calls, and the full operator set
+- **Klipper** — sections and options (including `[include]` globs), extended commands, macro parameters, Jinja statements/expressions/comments with whitespace control, display glyph blocks
+- **RS274/NGC** — parameters (`#1`, `#<named>`), bracket expressions, and O-code flow control with numeric and named labels
+
+## Usage
+
+```sh
+npm install
+npm run generate
+npm test
+```
+
+`npm test` regenerates the parser (so `src/` cannot silently drift from `grammar.js`), runs the corpus tests, parses every file in `examples/` rejecting any `ERROR` or missing node, and compiles every query in `queries/`.
+
+See [docs/VALIDATION.md](docs/VALIDATION.md) for the pinned upstream compatibility run — 228 Klipper configs, 570 Duet3D RRF files, and 247 LinuxCNC programs all parse without recovery nodes — reproducible with:
+
+```sh
+npm run validate:corpora
+```
+
+## Design
+
+The grammar is the deep module: its syntax tree is the small interface tested by every dialect fixture. Dialect differences remain named nodes at that interface—RRF statements, Klipper sections/options and Jinja directives, LinuxCNC O-statements—while common commands, operands, comments, and expressions share one implementation. This keeps vendor additions local and avoids four parsers drifting apart.
