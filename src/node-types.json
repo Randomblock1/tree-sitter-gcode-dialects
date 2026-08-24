@@ -68,6 +68,10 @@
         "named": true
       },
       {
+        "type": "system_variable",
+        "named": true
+      },
+      {
         "type": "tuple_expression",
         "named": true
       },
@@ -1111,6 +1115,10 @@
           {
             "type": "string",
             "named": true
+          },
+          {
+            "type": "system_variable",
+            "named": true
           }
         ]
       }
@@ -1969,6 +1977,10 @@
   },
   {
     "type": "spindle_word",
+    "named": true
+  },
+  {
+    "type": "system_variable",
     "named": true
   },
   {

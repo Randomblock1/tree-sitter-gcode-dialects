@@ -362,7 +362,7 @@
         "value": 10,
         "content": {
           "type": "PATTERN",
-          "value": "(?:[A-Za-z_][A-Za-z0-9_]*:|[A-Za-z_][0-9]*[A-Za-z_][A-Za-z0-9_]*[ \\t]*=)"
+          "value": "(?:[a-z_][A-Za-z0-9_]*:|[A-Za-z_][A-Za-z0-9_]*[a-z][A-Za-z0-9_]*:|[A-Za-z_][0-9]*[A-Za-z_][A-Za-z0-9_]*[ \\t]*=)"
         }
       }
     },
@@ -1957,6 +1957,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "system_variable"
+        },
+        {
+          "type": "SYMBOL",
           "name": "identifier"
         },
         {
@@ -2468,6 +2472,10 @@
                 {
                   "type": "SYMBOL",
                   "name": "parenthesized_expression"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "system_variable"
                 }
               ]
             }
@@ -4461,6 +4469,17 @@
     "parameter_bracket_start": {
       "type": "PATTERN",
       "value": "#\\["
+    },
+    "system_variable": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 8,
+        "content": {
+          "type": "PATTERN",
+          "value": "\\$[A-Za-z_][A-Za-z0-9_]*"
+        }
+      }
     },
     "spaced_parameter_reference": {
       "type": "SEQ",

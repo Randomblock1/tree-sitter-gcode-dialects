@@ -141,14 +141,18 @@ module.exports = grammar({
           $._newline,
         ),
       ),
-    // The "=" branch requires a second letter/underscore in the name so that
-    // Siemens address assignments at line start (S1=5000, R10=R11+2) stay
-    // program lines instead of lexing as a Klipper option.
+    // Both branches carve Siemens out of Klipper's "name value" shapes.
+    // The ":" branch requires a lowercase letter somewhere in the name, so an
+    // all-caps Siemens jump label at line start ("MARKE1: M30") stays a
+    // program line instead of swallowing its command as option text; every
+    // Klipper option key in the corpora has one, including the odd "Speed:".
+    // The "=" branch requires a second letter or underscore, so Siemens
+    // address assignments ("S1=5000", "R10=R11+2") stay program lines too.
     option_name: (_) =>
       token(
         prec(
           10,
-          /(?:[A-Za-z_][A-Za-z0-9_]*:|[A-Za-z_][0-9]*[A-Za-z_][A-Za-z0-9_]*[ \t]*=)/,
+          /(?:[a-z_][A-Za-z0-9_]*:|[A-Za-z_][A-Za-z0-9_]*[a-z][A-Za-z0-9_]*:|[A-Za-z_][0-9]*[A-Za-z_][A-Za-z0-9_]*[ \t]*=)/,
         ),
       ),
     klipper_option_text: (_) => token(prec(-1, /[^#\r\n]+/)),
@@ -449,6 +453,7 @@ module.exports = grammar({
         $.parameter_reference,
         $.indirect_parameter_reference,
         $.spaced_parameter_reference,
+        $.system_variable,
         $.identifier,
         $.reference_expression,
         $.call_expression,
@@ -502,7 +507,13 @@ module.exports = grammar({
         seq(
           field(
             "object",
-            choice($.identifier, $.string, $.parenthesized_expression),
+            choice(
+              $.identifier,
+              $.string,
+              $.parenthesized_expression,
+              // Siemens indexes system variables directly: $P_UIFR[1,X,TR].
+              $.system_variable,
+            ),
           ),
           repeat1(choice($.member_access, $.subscript_access)),
         ),
@@ -682,6 +693,8 @@ module.exports = grammar({
     indirect_parameter_reference: ($) =>
       seq(field("prefix", $.parameter_bracket_start), $._expression, "]"),
     parameter_bracket_start: (_) => /#\[/,
+    // Siemens system variables: $P_TOOLL, $AA_IM, $AC_MARKER, $TC_DP1.
+    system_variable: (_) => token(prec(8, /\$[A-Za-z_][A-Za-z0-9_]*/)),
     spaced_parameter_reference: ($) => seq("#", /<[^>\r\n]+>/),
     identifier: (_) => token(prec(1, /[A-Za-z_][A-Za-z0-9_]*/)),
     number: (_) =>
