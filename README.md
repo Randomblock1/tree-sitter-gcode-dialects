@@ -12,7 +12,7 @@ This grammar backs [G-code Dialects](https://github.com/Randomblock1/zed-gcode-d
 - **RepRapFirmware** — `var`, `global`, `set`, `if`/`elif`/`else`, `while`, `echo`, `abort`; `{...}` expressions in operands; object-model paths such as `move.axes[global.AXIS].machinePosition`; strings with `""` escapes, arrays with trailing commas, calls, and the full operator set
 - **Klipper** — sections and options (including `[include]` globs), extended commands, macro parameters, Jinja statements/expressions/comments with whitespace control, multiline Python-literal variables, display glyph blocks
 - **RS274/NGC / Fanuc** — parameters (`#1`, `#<named>`, `#[expr]` indirection), bracket expressions, O-code flow control with numeric and named labels, glued Fanuc forms (`IF[#7NE#0]GOTO10`, `WHILE[…]DO1`), `%` markers, active comments
-- **Siemens SINUMERIK** — address assignments (`X1=50`, `S1=5000`, `R10=R11+2`), bare block numbers, `GOTOB`/`GOTOF` with labels, cycle calls; see the scope note in [docs/REFERENCES.md](docs/REFERENCES.md)
+- **Siemens SINUMERIK** — address assignments (`X1=50`, `S1=5000`, `R10=R11+2`), system variables (`$P_TOOLL[1]`), bare block numbers, jump labels, `GOTOB`/`GOTOF`, cycle calls; see the scope note in [docs/REFERENCES.md](docs/REFERENCES.md)
 
 ## Usage
 
@@ -22,9 +22,11 @@ npm run generate
 npm test
 ```
 
-`npm test` regenerates the parser (so `src/` cannot silently drift from `grammar.js`), runs the corpus tests, parses every file in `examples/` rejecting any `ERROR` or missing node, and compiles every query in `queries/`.
+`npm test` regenerates the parser (so `src/` cannot silently drift from `grammar.js`), runs the corpus tests, parses every file in `examples/` rejecting any `ERROR` or missing node, compiles every query in `queries/`, and runs the tolerance cases.
 
-See [docs/VALIDATION.md](docs/VALIDATION.md) for the pinned upstream compatibility run — 2,376 of 2,393 real-world files across 15 corpora (Klipper configs and macro packs, Duet RRF machine configs and meta-G-code operation systems, slicer output, LinuxCNC and Fanuc shop programs, Siemens MPF part programs) parse without recovery nodes; the 17 exceptions are pinned, classified known failures. Reproducible with:
+Tolerance is deliberate, so it is also bounded. [test/tolerance/cases.txt](test/tolerance/cases.txt) says where it stops: inputs that must produce an `ERROR`, inputs that must parse cleanly and produce named nodes, and constructs a real control rejects that this grammar knowingly accepts because they are legal in one of the other three dialects. A no-`ERROR` sweep alone proves little — a grammar that accepted every byte would pass one.
+
+See [docs/VALIDATION.md](docs/VALIDATION.md) for the pinned upstream compatibility run — 2,989 of 3,039 real-world files across 29 corpora (Klipper configs and macro packs, Duet RRF machine configs and meta-G-code operation systems, output from eight slicers, LinuxCNC and Fanuc shop programs, Renishaw probing macros, Siemens MPF part programs) parse without recovery nodes; the 50 exceptions are pinned, classified known failures. Reproducible with:
 
 ```sh
 npm run validate:corpora
