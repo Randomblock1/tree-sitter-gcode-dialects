@@ -164,6 +164,8 @@ function siemensLine() {
     () =>
       `IF R${1 + int(20)}${pick(["==", ">", "<>"])}${int(9)} GOTOF END_${identifier().toUpperCase()}`,
     () => `MCALL CYCLE8${1 + int(3)}(${number()},${number()},${number()})`,
+    () => `R${1 + int(40)}=$P_${identifier().toUpperCase()}`,
+    () => `R${1 + int(40)}=$P_${identifier().toUpperCase()}[${int(4)}]`,
   ])();
 }
 
@@ -277,6 +279,8 @@ function cncBlock() {
       pick([
         () => `#${1 + int(30)} = ${expression(2)}`,
         () => `#<${identifier()}> = ${expression(1)}`,
+        () => `#[#${1 + int(20)}] = ${expression(1)}`,
+        () => `G1 X#[#${1 + int(20)}] Y[${expression(1)}]`,
         () => `G1 X[${expression(2)}] Y#${1 + int(20)}`,
         () => `(${identifier()} comment)`,
         () => `G${pick(["0", "1", "2", "3"])} ${axisWord()} ${axisWord()}`,
