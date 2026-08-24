@@ -120,7 +120,11 @@
         },
         {
           "type": "PATTERN",
-          "value": "#[^0-9<#\\r\\n][^\\r\\n]*"
+          "value": "#[^0-9<#\\[\\r\\n][^\\r\\n]*"
+        },
+        {
+          "type": "PATTERN",
+          "value": "#\\[[ \\t\\[]*[^0-9#\\[+\\-. \\t\\r\\n][^\\r\\n]*"
         }
       ]
     },
@@ -1084,6 +1088,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "indirect_parameter_reference"
+        },
+        {
+          "type": "SYMBOL",
           "name": "spaced_parameter_reference"
         },
         {
@@ -1363,6 +1371,27 @@
           ]
         },
         {
+          "type": "SEQ",
+          "members": [
+            {
+              "type": "FIELD",
+              "name": "prefix",
+              "content": {
+                "type": "SYMBOL",
+                "name": "parameter_bracket_word_start"
+              }
+            },
+            {
+              "type": "SYMBOL",
+              "name": "_expression"
+            },
+            {
+              "type": "STRING",
+              "value": "]"
+            }
+          ]
+        },
+        {
           "type": "SYMBOL",
           "name": "parameter_reference_word"
         }
@@ -1375,6 +1404,10 @@
     "bracket_word_start": {
       "type": "PATTERN",
       "value": "[A-Za-z]\\["
+    },
+    "parameter_bracket_word_start": {
+      "type": "PATTERN",
+      "value": "[A-Za-z]#\\["
     },
     "parameter_reference_word": {
       "type": "PATTERN",
@@ -1449,8 +1482,17 @@
             "type": "FIELD",
             "name": "target",
             "content": {
-              "type": "SYMBOL",
-              "name": "parameter_reference"
+              "type": "CHOICE",
+              "members": [
+                {
+                  "type": "SYMBOL",
+                  "name": "parameter_reference"
+                },
+                {
+                  "type": "SYMBOL",
+                  "name": "indirect_parameter_reference"
+                }
+              ]
             }
           },
           {
@@ -1904,6 +1946,10 @@
         {
           "type": "SYMBOL",
           "name": "parameter_reference"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "indirect_parameter_reference"
         },
         {
           "type": "SYMBOL",
@@ -4390,6 +4436,31 @@
           "value": "#+(?:\\d+|<[^>\\r\\n]+>)"
         }
       }
+    },
+    "indirect_parameter_reference": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "prefix",
+          "content": {
+            "type": "SYMBOL",
+            "name": "parameter_bracket_start"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_expression"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "parameter_bracket_start": {
+      "type": "PATTERN",
+      "value": "#\\["
     },
     "spaced_parameter_reference": {
       "type": "SEQ",

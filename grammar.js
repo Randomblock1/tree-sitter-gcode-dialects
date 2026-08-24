@@ -69,12 +69,22 @@ module.exports = grammar({
     semicolon_comment: (_) => /;[^\r\n]*/,
     // "##" followed by a digit stays parameter indirection (Fanuc ##2);
     // any other "##"-run is a comment.
+    //
+    // "#[" is the contested one: it opens LinuxCNC indirection ("#[#1] = 0")
+    // and it opens a commented-out Klipper section ("#[tmc2208 stepper_x]").
+    // The first character that could start an expression decides — a digit,
+    // "#", a sign, or a decimal point means indirection, anything else means
+    // prose. Nesting and spaces are skipped first, so "#[[#1+1]*2]" is still
+    // indirection and "#[[tmc2130 stepper_x]" is still a comment. Both
+    // branches lex at the same precedence, so the comment wins by being the
+    // longer match wherever it applies at all.
     hash_comment: (_) =>
       choice(
         "#",
         /#{3,}[^\r\n]*/,
         /##(?:[^0-9\r\n][^\r\n]*)?/,
-        /#[^0-9<#\r\n][^\r\n]*/,
+        /#[^0-9<#\[\r\n][^\r\n]*/,
+        /#\[[ \t\[]*[^0-9#\[+\-. \t\r\n][^\r\n]*/,
       ),
     // One level of nesting: real Fanuc output contains "(A (B))" comments.
     // The unterminated variant (prec -4) tolerates prose like "(The height is
@@ -280,6 +290,7 @@ module.exports = grammar({
         $.named_argument,
         $.parameter_assignment,
         $.parameter_reference,
+        $.indirect_parameter_reference,
         $.spaced_parameter_reference,
         $.brace_expression,
         $.bracket_expression,
@@ -328,10 +339,16 @@ module.exports = grammar({
           optional(commaSep1($._expression)),
           "]",
         ),
+        seq(
+          field("prefix", $.parameter_bracket_word_start),
+          $._expression,
+          "]",
+        ),
         $.parameter_reference_word,
       ),
     brace_word_start: (_) => /[A-Za-z]\{/,
     bracket_word_start: (_) => /[A-Za-z]\[/,
+    parameter_bracket_word_start: (_) => /[A-Za-z]#\[/,
     parameter_reference_word: (_) => /[A-Za-z]#+(?:\d+|<[^>\r\n]+>)/,
     quoted_word: (_) =>
       choice(/[A-Za-z]"(?:[^"\\\r\n]|\\.)*"/, /[A-Za-z]'(?:[^'\\\r\n]|\\.)*'/),
@@ -348,7 +365,10 @@ module.exports = grammar({
       prec(
         1,
         seq(
-          field("target", $.parameter_reference),
+          field(
+            "target",
+            choice($.parameter_reference, $.indirect_parameter_reference),
+          ),
           "=",
           field("value", $._expression),
         ),
@@ -427,6 +447,7 @@ module.exports = grammar({
         $.boolean,
         $.null,
         $.parameter_reference,
+        $.indirect_parameter_reference,
         $.spaced_parameter_reference,
         $.identifier,
         $.reference_expression,
@@ -655,6 +676,12 @@ module.exports = grammar({
       caseInsensitiveWords(["eq", "ne", "gt", "ge", "lt", "le"]),
 
     parameter_reference: (_) => token(prec(8, /#+(?:\d+|<[^>\r\n]+>)/)),
+    // LinuxCNC indirection, where the parameter number is itself an
+    // expression: "#[#1] = 0", "G1 X#[#<pointer>]". "#[" is one token so the
+    // lexer can weigh it against a "#" comment as a whole.
+    indirect_parameter_reference: ($) =>
+      seq(field("prefix", $.parameter_bracket_start), $._expression, "]"),
+    parameter_bracket_start: (_) => /#\[/,
     spaced_parameter_reference: ($) => seq("#", /<[^>\r\n]+>/),
     identifier: (_) => token(prec(1, /[A-Za-z_][A-Za-z0-9_]*/)),
     number: (_) =>

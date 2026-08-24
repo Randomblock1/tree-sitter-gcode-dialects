@@ -36,6 +36,10 @@
         "named": true
       },
       {
+        "type": "indirect_parameter_reference",
+        "named": true
+      },
+      {
         "type": "null",
         "named": true
       },
@@ -111,6 +115,10 @@
       },
       {
         "type": "feed_word",
+        "named": true
+      },
+      {
+        "type": "indirect_parameter_reference",
         "named": true
       },
       {
@@ -521,6 +529,10 @@
           {
             "type": "bracket_word_start",
             "named": true
+          },
+          {
+            "type": "parameter_bracket_word_start",
+            "named": true
           }
         ]
       }
@@ -580,6 +592,32 @@
     "type": "hash_comment",
     "named": true,
     "fields": {}
+  },
+  {
+    "type": "indirect_parameter_reference",
+    "named": true,
+    "fields": {
+      "prefix": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "parameter_bracket_start",
+            "named": true
+          }
+        ]
+      }
+    },
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "_expression",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "jinja_directive",
@@ -934,6 +972,10 @@
         "multiple": false,
         "required": true,
         "types": [
+          {
+            "type": "indirect_parameter_reference",
+            "named": true
+          },
           {
             "type": "parameter_reference",
             "named": true
@@ -1875,6 +1917,14 @@
   },
   {
     "type": "option_name",
+    "named": true
+  },
+  {
+    "type": "parameter_bracket_start",
+    "named": true
+  },
+  {
+    "type": "parameter_bracket_word_start",
     "named": true
   },
   {
