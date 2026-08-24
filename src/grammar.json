@@ -340,8 +340,17 @@
             "type": "CHOICE",
             "members": [
               {
-                "type": "SYMBOL",
-                "name": "klipper_inline_comment"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SYMBOL",
+                    "name": "klipper_inline_comment"
+                  },
+                  {
+                    "type": "SYMBOL",
+                    "name": "semicolon_comment"
+                  }
+                ]
               },
               {
                 "type": "BLANK"
@@ -3747,6 +3756,46 @@
                 "name": "operator",
                 "content": {
                   "type": "SYMBOL",
+                  "name": "is_not_in_operator"
+                }
+              },
+              {
+                "type": "REPEAT",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_newline"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "right",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "PREC_LEFT",
+          "value": 5,
+          "content": {
+            "type": "SEQ",
+            "members": [
+              {
+                "type": "FIELD",
+                "name": "left",
+                "content": {
+                  "type": "SYMBOL",
+                  "name": "_expression"
+                }
+              },
+              {
+                "type": "FIELD",
+                "name": "operator",
+                "content": {
+                  "type": "SYMBOL",
                   "name": "is_not_operator"
                 }
               },
@@ -4328,19 +4377,44 @@
                 "name": "_expression"
               },
               {
-                "type": "STRING",
-                "value": "else"
-              },
-              {
-                "type": "REPEAT",
-                "content": {
-                  "type": "SYMBOL",
-                  "name": "_newline"
-                }
-              },
-              {
-                "type": "SYMBOL",
-                "name": "_expression"
+                "type": "CHOICE",
+                "members": [
+                  {
+                    "type": "SEQ",
+                    "members": [
+                      {
+                        "type": "CHOICE",
+                        "members": [
+                          {
+                            "type": "STRING",
+                            "value": "else"
+                          },
+                          {
+                            "type": "TOKEN",
+                            "content": {
+                              "type": "PATTERN",
+                              "value": "(?:\\r?\\n[ \\t]*)+[eE][lL][sS][eE][ \\t]"
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "type": "REPEAT",
+                        "content": {
+                          "type": "SYMBOL",
+                          "name": "_newline"
+                        }
+                      },
+                      {
+                        "type": "SYMBOL",
+                        "name": "_expression"
+                      }
+                    ]
+                  },
+                  {
+                    "type": "BLANK"
+                  }
+                ]
               }
             ]
           }
@@ -4418,6 +4492,10 @@
     "is_in_operator": {
       "type": "PATTERN",
       "value": "[iI][sS][ \\t]+[iI][nN]"
+    },
+    "is_not_in_operator": {
+      "type": "PATTERN",
+      "value": "[iI][sS][ \\t]+[nN][oO][tT][ \\t]+[iI][nN]"
     },
     "not_operator": {
       "type": "TOKEN",

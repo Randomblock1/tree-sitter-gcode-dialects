@@ -335,6 +335,10 @@
             "named": true
           },
           {
+            "type": "is_not_in_operator",
+            "named": true
+          },
+          {
             "type": "is_not_operator",
             "named": true
           },
@@ -757,6 +761,10 @@
         },
         {
           "type": "number",
+          "named": true
+        },
+        {
+          "type": "semicolon_comment",
           "named": true
         },
         {
@@ -1861,6 +1869,10 @@
   },
   {
     "type": "is_in_operator",
+    "named": true
+  },
+  {
+    "type": "is_not_in_operator",
     "named": true
   },
   {

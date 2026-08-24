@@ -137,7 +137,10 @@ module.exports = grammar({
             ),
             optional($.klipper_option_text),
           ),
-          optional($.klipper_inline_comment),
+          // Klipper's reader takes both "#" and ";" as inline comment
+          // prefixes, and real configs use ";" after numeric values
+          // ("pid_Kp: 2.0   ;40").
+          optional(choice($.klipper_inline_comment, $.semicolon_comment)),
           $._newline,
         ),
       ),
@@ -621,7 +624,12 @@ module.exports = grammar({
         ...binaryLeft(PREC.COMPARE, [$.text_comparison_operator], $),
         ...binaryLeft(
           PREC.COMPARE + 1,
-          [$.not_in_operator, $.is_not_operator, $.is_in_operator],
+          [
+            $.not_in_operator,
+            $.is_not_in_operator,
+            $.is_not_operator,
+            $.is_in_operator,
+          ],
           $,
         ),
         ...binaryLeft(PREC.CONCAT, ["^", "~", continuationOp("~")], $),
@@ -651,14 +659,26 @@ module.exports = grammar({
         PREC.CONDITIONAL,
         choice(
           seq($._expression, "?", $._expression, ":", $._expression),
+          // Jinja allows the else arm to be omitted, and real macros wrap the
+          // line before "else". That wrap has to be a newline-prefixed token,
+          // the same trick "\n and" and "\n or" use: LR must pick this
+          // alternative's precedence before it sees the keyword, so it cannot
+          // be a grammar-level repeat. "if" deliberately gets no such form —
+          // a newline before "if" is indistinguishable from an RRF "if"
+          // statement on the next line, and gluing those together is silent:
+          // no ERROR, just a conditional where a control block belonged.
           seq(
             $._expression,
             "if",
             repeat($._newline),
             $._expression,
-            "else",
-            repeat($._newline),
-            $._expression,
+            optional(
+              seq(
+                choice("else", continuationWordOp("else")),
+                repeat($._newline),
+                $._expression,
+              ),
+            ),
           ),
         ),
       ),
@@ -681,6 +701,11 @@ module.exports = grammar({
       new RegExp(`${caseInsensitive("is")}[ \\t]+${caseInsensitive("not")}`),
     is_in_operator: (_) =>
       new RegExp(`${caseInsensitive("is")}[ \\t]+${caseInsensitive("in")}`),
+    // Longer than is_not_operator, so the lexer prefers it on "is not in".
+    is_not_in_operator: (_) =>
+      new RegExp(
+        `${caseInsensitive("is")}[ \\t]+${caseInsensitive("not")}[ \\t]+${caseInsensitive("in")}`,
+      ),
     not_operator: (_) =>
       token(prec(2, new RegExp(`${caseInsensitive("not")}[ \\t]+`))),
     text_comparison_operator: (_) =>
