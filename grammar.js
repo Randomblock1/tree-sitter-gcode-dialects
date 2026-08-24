@@ -686,7 +686,11 @@ module.exports = grammar({
     text_comparison_operator: (_) =>
       caseInsensitiveWords(["eq", "ne", "gt", "ge", "lt", "le"]),
 
-    parameter_reference: (_) => token(prec(8, /#+(?:\d+|<[^>\r\n]+>)/)),
+    // The fractional part is Haas/Fanuc bit addressing into a system
+    // parameter ("#30003.078"). Without it the decimals read as a separate
+    // number, which is fine at word level but an ERROR inside an expression.
+    parameter_reference: (_) =>
+      token(prec(8, /#+(?:\d+(?:\.\d+)?|<[^>\r\n]+>)/)),
     // LinuxCNC indirection, where the parameter number is itself an
     // expression: "#[#1] = 0", "G1 X#[#<pointer>]". "#[" is one token so the
     // lexer can weigh it against a "#" comment as a whole.
