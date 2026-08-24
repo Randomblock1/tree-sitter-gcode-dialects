@@ -33,4 +33,4 @@ export function runTreeSitter(args, options = {}) {
   }
 }
 
-export { root };
+export { binary as treeSitterBinary, root };

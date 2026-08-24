@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import { checkQueries } from "./check-queries.mjs";
@@ -27,4 +28,9 @@ runTreeSitter(["parse", ...fixtures, "--quiet"]);
 
 if (!fixturesOnly) {
   checkQueries();
+  execFileSync(
+    process.execPath,
+    [join(root, "scripts", "check-tolerance.mjs")],
+    { stdio: "inherit" },
+  );
 }

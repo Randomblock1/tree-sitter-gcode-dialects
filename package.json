@@ -38,6 +38,7 @@
     "generate": "tree-sitter generate",
     "test": "node scripts/test.mjs",
     "test:queries": "node scripts/check-queries.mjs",
+    "test:tolerance": "node scripts/check-tolerance.mjs",
     "parse:fixtures": "node scripts/test.mjs --fixtures-only",
     "validate:corpora": "node scripts/validate-corpora.mjs",
     "fuzz": "node scripts/fuzz.mjs",

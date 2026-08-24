@@ -1,0 +1,274 @@
+# Where tolerance stops.
+#
+# This grammar is deliberately permissive: it accepts unknown commands, vendor
+# arguments, and glued compact lines, because an editor that reports half a
+# file as broken is worse than one that highlights an unfamiliar command. A
+# no-ERROR corpus sweep therefore proves very little on its own — a grammar
+# that accepted every byte would pass it. These cases fix the boundary from
+# both sides.
+#
+#   reject: the parser must produce an ERROR. Only structural malformedness
+#           qualifies — unbalanced delimiters, an operator with no operand, a
+#           keyword whose required operand is missing.
+#
+#   accept: the parser must NOT produce an ERROR, and must produce the listed
+#           nodes if any are named after "->". These are the forms that look
+#           wrong to someone who has only read a G-code tutorial but that real
+#           controls accept, plus the cases where the right tree is not the
+#           obvious one. A node written "!name" must be ABSENT.
+#
+#   tolerate: input a real control rejects that this grammar accepts anyway.
+#           Every one of these is here because one grammar serves four
+#           dialects and the construct is legal, or unavoidably ambiguous, in
+#           at least one of the others. Listing them keeps the leniency
+#           reviewable instead of invisible; tightening one is then a
+#           deliberate change to this file, not an accident.
+#
+# What is deliberately NOT here: anything a syntax layer cannot know. An
+# "endif" with no "if", a checksum whose arithmetic is wrong, an unknown
+# command, a G1 with no axis words, a duplicate axis word — all of those are
+# the firmware's business, and a line-oriented grammar that guessed at them
+# would be wrong on the many files that legitimately span those constructs.
+#
+# Two entries below pin the readings of "#[", which the lexer has to tell
+# apart: LinuxCNC indirection and a commented-out Klipper section. Getting that
+# wrong is invisible to an ERROR-only sweep — 942 lines of NativeCAM
+# indirection once parsed as comments while the corpus still reported clean.
+#
+# Everything from the first "---" on is case data, so no comment lines appear
+# past this point: a case body may itself start with "#".
+
+--- reject: unterminated bracket expression
+#100 = [1 + 2
+
+--- reject: stray closing bracket
+#100 = 1 + 2]
+
+--- reject: binary operator with no right operand
+#100 = [1 + ]
+
+--- reject: unterminated brace expression
+G1 X{move.axes[0].max
+
+--- reject: stray closing brace
+echo }
+
+--- reject: stray closing parenthesis
+G1 X1 )
+
+--- reject: dangling operator
+echo 1 +
+
+--- reject: two operators in a row
+echo 1 + * 2
+
+--- reject: RRF if with no condition
+if
+  G1 X1
+
+--- reject: RRF while with no condition
+while
+  break
+
+--- reject: Siemens address assignment with no value
+X1=
+
+--- reject: unterminated Jinja statement
+gcode:
+  {% if x %
+
+--- reject: unterminated Jinja expression
+gcode:
+  M117 { printer.toolhead.position
+
+--- reject: unterminated Jinja comment
+gcode:
+  {# note
+
+--- accept: trailing decimal point
+G1 Z150.
+
+--- accept: leading decimal point
+G1 X.5
+
+--- accept: compact line with no spaces -> g_code, axis_word, feed_word
+N10G01X1.Y1.F100.
+
+--- accept: checksummed line -> checksum
+N1 G1 X1*85
+
+--- accept: block delete -> block_delete
+/N1 G1 X1
+
+--- accept: unterminated parenthesised comment -> parenthesized_comment
+G1 X1 (comment runs to end of line
+
+--- accept: RRF doubled-quote escape -> double_quoted_string
+echo "say ""hi"""
+
+--- accept: RRF one-element array needs the trailing comma -> brace_expression
+var a = {pi,}
+
+--- accept: RRF keyword with no space before the brace -> rrf_control
+if{state.status=="idle"}
+  G1 X1
+
+--- accept: RRF object model path -> member_access, subscript_access
+echo {move.axes[0].machinePosition}
+
+--- accept: glued Fanuc conditional jump -> bracket_expression
+N10IF[#7NE#0]GOTO10
+
+--- accept: Fanuc while loop -> bracket_expression
+WHILE[#1LT10]DO1
+END1
+
+--- accept: word value taken from a parameter -> parameter_reference_word
+T#33 M6
+
+--- accept: percent-delimited program -> percent_line
+%
+O0001
+%
+
+--- accept: Siemens address assignments -> address_assignment
+X1=50 S1=5000
+
+--- accept: Siemens R parameter arithmetic -> address_assignment
+R10=R11+2
+
+--- accept: Siemens jump to label -> extended_command
+GOTOF MARKE1
+
+--- accept: Siemens label definition is not a Klipper option -> !klipper_option
+ENDE: M30
+
+--- accept: numeric O-word block -> o_statement
+o100 if [1 EQ 1]
+o100 endif
+
+--- accept: named O-word call -> o_statement
+o<probe> call [1]
+
+--- accept: active comment -> parenthesized_comment
+(MSG, hello world)
+
+--- accept: LinuxCNC indirection through a computed parameter -> indirect_parameter_reference
+#[#1] = 0
+
+--- accept: LinuxCNC nested indirection -> indirect_parameter_reference
+#[[#1+1]*2] = 5
+
+--- accept: indirection as a word value -> expression_word
+G1 X#[#<pointer>] Y#[#<pointer> + 1]
+
+--- accept: commented-out Klipper section stays a comment -> hash_comment
+#[tmc2208 stepper_x]
+
+--- accept: commented-out Klipper section with a doubled bracket -> hash_comment
+#[[tmc2130 stepper_x]
+
+--- accept: Klipper empty Python list value -> klipper_option
+variable_probe_points: []
+
+--- accept: Klipper single-brace expression delimiter -> brace_expression
+gcode:
+  M117 { printer.toolhead.position.x }
+
+--- reject: stray closing bracket after a word
+G1 X10 ]
+
+--- reject: parameter assignment with no value
+#1=
+
+--- reject: named parameter never terminated
+G0 X EXISTS[#<foo]
+
+--- reject: unary function not followed by a bracket
+G1 X[SIN 30]
+
+--- reject: RRF operator with no right operand inside braces
+if {1 + }
+  G1 X1
+
+--- accept: letterless number after a word
+G1 X10 5
+
+--- accept: fractional line number
+N10.5 G1 X1
+
+--- accept: lowercase words
+g1 x1
+
+--- accept: explicit leading plus
+G1 X+5
+
+--- accept: Klipper section name containing spaces -> klipper_section
+[gcode_macro MY MACRO]
+gcode:
+  G1 X1
+
+--- accept: Klipper inline semicolon comment after a value -> semicolon_comment
+[extruder]
+pid_Kp: 2.0     ;40
+
+--- accept: Haas bit-addressed system parameter -> parameter_reference
+IF [ #30003.078 GT 0 ] GOTO22
+
+--- accept: Siemens system variable in an expression -> system_variable
+SUPA G0 Z=0-$P_TOOLL[1]
+
+--- accept: word with no value, which Marlin reads as zero
+G1 X
+
+--- tolerate: unterminated RRF string
+M117 "unterminated
+
+--- tolerate: unclosed Klipper section header
+[extruder
+step_pin: PA1
+
+--- tolerate: unknown O-word control keyword
+o100 endwhle
+
+--- tolerate: LinuxCNC condition that is not bracketed
+o100 if #1 GT 2
+
+--- tolerate: RRF else with a command on the same line
+if {1}
+  G1 X1
+else G1 X0
+
+--- tolerate: nested parenthesised comment
+G0 X1 (outer (inner) )
+
+--- tolerate: known limitation, unbraced echo splits a subscript -> bare_argument
+echo move.axes[0].machinePosition
+
+--- tolerate: comment after a bracketed call reads as arguments
+#195= ABS[ #192 ] (TP)
+
+--- accept: Jinja "is not in" test -> is_not_in_operator
+gcode:
+  {% if params.STATE|lower is not in ['docked','attached'] %}
+  {% endif %}
+
+--- accept: Jinja conditional with no else arm -> conditional_expression
+gcode:
+  {% set path = 'config' if params.C %}
+
+--- accept: Jinja conditional wrapped before else -> conditional_expression
+gcode:
+  {% set msg = "docked" if probe == 'docked'
+     else "attached" %}
+
+--- accept: an RRF if after an expression line stays a statement -> rrf_control
+echo { "a" ^ global.b }
+
+if { global.c }
+  G1 X1
+
+--- reject: known limitation, Jinja conditional wrapped before if
+gcode:
+  {% set extruder = "extruder" ~ params.T
+     if "T" in params else printer.toolhead.extruder %}
