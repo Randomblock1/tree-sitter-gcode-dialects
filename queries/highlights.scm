@@ -43,6 +43,8 @@
 (argument_name) @property
 (parameter_reference) @variable.special
 (spaced_parameter_reference) @variable.special
+(indirect_parameter_reference) @variable.special
+(system_variable) @variable.special
 (quoted_word) @string
 
 ; Expressions
