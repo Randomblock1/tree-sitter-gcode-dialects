@@ -709,3 +709,49 @@ G1 X[1 mOd 2] Y[3 aNd 1] Z[1 oR 0]
       (binary_expression
         (number)
         (number)))))
+
+================================================================================
+LinuxCNC indirection, Siemens system variables, and Klipper comment prefixes
+================================================================================
+
+#[#1] = 0
+G1 X#[#<pointer>]
+#[tmc2208 stepper_x]
+SUPA G0 Z=0-$P_TOOLL[1]
+ENDE: M30
+pid_Kp: 2.0     ;40
+
+--------------------------------------------------------------------------------
+
+(source_file
+  (program_line
+    (parameter_assignment
+      target: (indirect_parameter_reference
+        prefix: (parameter_bracket_start)
+        (parameter_reference))
+      value: (number)))
+  (program_line
+    command: (g_code)
+    (expression_word
+      prefix: (parameter_bracket_word_start)
+      (parameter_reference)))
+  (hash_comment)
+  (program_line
+    command: (extended_command)
+    (parameter_word)
+    (named_argument
+      name: (argument_name)
+      value: (binary_expression
+        left: (number)
+        right: (reference_expression
+          object: (system_variable)
+          (subscript_access
+            index: (number))))))
+  (program_line
+    command: (extended_command)
+    (colon)
+    (parameter_word))
+  (klipper_option
+    name: (option_name)
+    (number)
+    (semicolon_comment)))
