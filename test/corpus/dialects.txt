@@ -34,7 +34,7 @@ set global.WIDTH = abs(move.axes[global.ENDSTOP_AXIS].machinePosition - var.near
   (program_line
     (g_code)
     (expression_word
-      (brace_word_start)
+      (address_letter)
       (binary_expression
         (reference_expression
           (identifier)
@@ -45,7 +45,7 @@ set global.WIDTH = abs(move.axes[global.ENDSTOP_AXIS].machinePosition - var.near
           (member_access
             (identifier)))))
     (expression_word
-      (brace_word_start)
+      (address_letter)
       (reference_expression
         (identifier)
         (member_access
@@ -183,7 +183,7 @@ gcode:
   (program_line
     (g_code)
     (expression_word
-      (brace_word_start)
+      (address_letter)
       (binary_expression
         (reference_expression
           (identifier)
@@ -292,7 +292,7 @@ M30
     (line_number)
     (g_code)
     (expression_word
-      (bracket_word_start)
+      (address_letter)
       (binary_expression
         (parameter_reference)
         (number)))
@@ -695,17 +695,17 @@ G1 X[1 mOd 2] Y[3 aNd 1] Z[1 oR 0]
   (program_line
     (g_code)
     (expression_word
-      (bracket_word_start)
+      (address_letter)
       (binary_expression
         (number)
         (number)))
     (expression_word
-      (bracket_word_start)
+      (address_letter)
       (binary_expression
         (number)
         (number)))
     (expression_word
-      (bracket_word_start)
+      (address_letter)
       (binary_expression
         (number)
         (number)))))
@@ -733,7 +733,7 @@ pid_Kp: 2.0     ;40
   (program_line
     command: (g_code)
     (expression_word
-      prefix: (parameter_bracket_word_start)
+      prefix: (parameter_word_start)
       (parameter_reference)))
   (hash_comment)
   (program_line

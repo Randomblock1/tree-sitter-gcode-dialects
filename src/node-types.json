@@ -90,6 +90,10 @@
         "named": true
       },
       {
+        "type": "address_letter",
+        "named": true
+      },
+      {
         "type": "axis_word",
         "named": true
       },
@@ -531,15 +535,11 @@
         "required": false,
         "types": [
           {
-            "type": "brace_word_start",
+            "type": "address_letter",
             "named": true
           },
           {
-            "type": "bracket_word_start",
-            "named": true
-          },
-          {
-            "type": "parameter_bracket_word_start",
+            "type": "parameter_word_start",
             "named": true
           }
         ]
@@ -1724,6 +1724,10 @@
     "named": false
   },
   {
+    "type": "address_letter",
+    "named": true
+  },
+  {
     "type": "argument_name",
     "named": true
   },
@@ -1741,14 +1745,6 @@
   },
   {
     "type": "boolean",
-    "named": true
-  },
-  {
-    "type": "brace_word_start",
-    "named": true
-  },
-  {
-    "type": "bracket_word_start",
     "named": true
   },
   {
@@ -1944,10 +1940,6 @@
     "named": true
   },
   {
-    "type": "parameter_bracket_word_start",
-    "named": true
-  },
-  {
     "type": "parameter_reference",
     "named": true
   },
@@ -1957,6 +1949,10 @@
   },
   {
     "type": "parameter_word",
+    "named": true
+  },
+  {
+    "type": "parameter_word_start",
     "named": true
   },
   {

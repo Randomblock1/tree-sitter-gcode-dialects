@@ -294,6 +294,7 @@ module.exports = grammar({
         $.spindle_word,
         $.parameter_word,
         $.expression_word,
+        $.address_letter,
         $.named_argument,
         $.parameter_assignment,
         $.parameter_reference,
@@ -337,25 +338,37 @@ module.exports = grammar({
     expression_word: ($) =>
       choice(
         seq(
-          field("prefix", $.brace_word_start),
+          field("prefix", $.address_letter),
+          token.immediate("{"),
           optional(commaSep1($._expression)),
           "}",
         ),
         seq(
-          field("prefix", $.bracket_word_start),
+          field("prefix", $.address_letter),
+          token.immediate("["),
           optional(commaSep1($._expression)),
           "]",
         ),
         seq(
-          field("prefix", $.parameter_bracket_word_start),
+          field("prefix", $.parameter_word_start),
+          token.immediate("["),
           $._expression,
           "]",
         ),
         $.parameter_reference_word,
       ),
-    brace_word_start: (_) => /[A-Za-z]\{/,
-    bracket_word_start: (_) => /[A-Za-z]\[/,
-    parameter_bracket_word_start: (_) => /[A-Za-z]#\[/,
+    // The address letter of a word whose value is an expression: the "X" of
+    // "X{...}" and "X[...]". The opening delimiter is a separate, immediate
+    // token so that it stays a bracket for both bracket matching and
+    // highlighting — glued onto the letter it was neither. The letter also
+    // stands alone as a program item, because the lexer commits to it before
+    // it can see whether a delimiter follows, and a valueless word is legal
+    // anyway ("G1 X", which Marlin reads as X0).
+    address_letter: (_) => /[A-Za-z]/,
+    // "X#[...]" keeps its "#" in the prefix: a lone letter would lose the
+    // lexer race to a bare argument, which reads "X#" as two of its own
+    // characters.
+    parameter_word_start: (_) => /[A-Za-z]#/,
     parameter_reference_word: (_) => /[A-Za-z]#+(?:\d+|<[^>\r\n]+>)/,
     quoted_word: (_) =>
       choice(/[A-Za-z]"(?:[^"\\\r\n]|\\.)*"/, /[A-Za-z]'(?:[^'\\\r\n]|\\.)*'/),

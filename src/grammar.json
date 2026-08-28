@@ -1085,6 +1085,10 @@
         },
         {
           "type": "SYMBOL",
+          "name": "address_letter"
+        },
+        {
+          "type": "SYMBOL",
           "name": "named_argument"
         },
         {
@@ -1287,7 +1291,14 @@
               "name": "prefix",
               "content": {
                 "type": "SYMBOL",
-                "name": "brace_word_start"
+                "name": "address_letter"
+              }
+            },
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "STRING",
+                "value": "{"
               }
             },
             {
@@ -1337,7 +1348,14 @@
               "name": "prefix",
               "content": {
                 "type": "SYMBOL",
-                "name": "bracket_word_start"
+                "name": "address_letter"
+              }
+            },
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "STRING",
+                "value": "["
               }
             },
             {
@@ -1387,7 +1405,14 @@
               "name": "prefix",
               "content": {
                 "type": "SYMBOL",
-                "name": "parameter_bracket_word_start"
+                "name": "parameter_word_start"
+              }
+            },
+            {
+              "type": "IMMEDIATE_TOKEN",
+              "content": {
+                "type": "STRING",
+                "value": "["
               }
             },
             {
@@ -1406,17 +1431,13 @@
         }
       ]
     },
-    "brace_word_start": {
+    "address_letter": {
       "type": "PATTERN",
-      "value": "[A-Za-z]\\{"
+      "value": "[A-Za-z]"
     },
-    "bracket_word_start": {
+    "parameter_word_start": {
       "type": "PATTERN",
-      "value": "[A-Za-z]\\["
-    },
-    "parameter_bracket_word_start": {
-      "type": "PATTERN",
-      "value": "[A-Za-z]#\\["
+      "value": "[A-Za-z]#"
     },
     "parameter_reference_word": {
       "type": "PATTERN",
